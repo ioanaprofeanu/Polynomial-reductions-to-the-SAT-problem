@@ -1,0 +1,178 @@
+##### Profeanu Ioana, 323CA
+## Analiza Algoritmilor 2021 - Tema2
+
+### Overview
+* The goal of the three implemented tasks is to solve three graph problems, using polynomial
+reductions to the SAT problem
+* Throughout the implementation description, **n** will be referred to as the number of graph nodes,
+**m** will be referred to as the number of edges between the nodes and **k** will be referred to as
+the number of edges within the clique (for the first task) / the number of vertices (for the second
+task)/ the number of colors (for the third task).
+---------------------------------------------------------------------------------------------------
+### Task 1 - Retele
+
+#### Input and Output
+* The input data will be stored in certain variables, and the connection between the nodes will be
+stored using an adjacency matrix.
+* The output data received from the Oracle will be stored in a String for keeping the True or False
+answer, and a list of values for keeping the clique nodes values.
+
+#### Identifying the NP graph problem
+* Because the task implies finding a "group of good people" within a social network, where everyone
+knows each other and has common interests, the K-Clique graph problem is easily identified. In a
+clique, every node (in our case, the people within the group) is connected (in our case, has a
+friendship) to all the other nodes within the clique.
+
+#### Reduction of K-Clique to SAT problem
+* Using a series of clauses, we can reduce the K-Clique problem to the SAT problem, encoding the
+implied variables and writing the clauses based on the conditions the clique has to respect,
+clauses which will later be given to the Oracle for solving.
+* The solving steps are the following:
+  * Find the number of variables and their encoding:
+    * For this problem, we will consider that every vertex within the clique could be any of the
+    vertices within the graph. To further explain, consider that we have a variable x_iv for each
+    i node from the clique, 1 <= i <= k, and for each node v from the graph, 1 <= v <= n, which
+    translates into "v is the ith vertex in the clique". Thus, we have a number of n * k variables,
+    that we will encode according to the following formula: (i - 1) * n + (v - 1) + 1. When deco-
+    ding, the encoded node will be found by using modulo n (the rest of the division to n).
+  * Clause types:
+    * We have a series of three types of clauses, which represent constrains that align with the
+    problem's bounds:
+      * Type 1: If a clique of size k exists within the graph, each of the clique's vertices has
+      to be one of the vertices v within the graph. Put simply, for every node i within the clique,
+      one of the graph's node has to occupy that position, thus we have a number of k clauses of
+      x_i1 v x_i2 v ... v x_in, 1 <= i <= k. As a result, at least one of the variables have to be
+      true in order for the clique to exist.
+      * Type 2: If two vertices are not connected, they cannot both be within the clique, since all
+      the clique's nodes are connected with each other; there has to be an edge between each of the
+      clique's nodes. Thus, for every two different positions i and j from the clique (1 <= i, j <=
+      k), and for every two nodes v and w from the graph which are not connected, the clause will
+      be the following: !x_iv v !x_jv. The number of clauses will be k * (k - 1) * ((n * (n - 1)
+      * / 2)- m).
+      * Type 3: Considering that we have a node v from the graph that is part of the clique, v
+      can be on only one position of the clique. Thus, it cannot occupy two positions of the clique
+      at the same type. Considering i, j, i!=j, (1 <= i, j <= k) as two different positions from
+      the clique, the clause for the node v will be the following: !x_iv v !x_jv. The number of
+      clauses will be (k * (k - 1) / 2) * n.
+      
+#### The Oracle's result
+* In case the Oracle successfully found the variables which satisfy all the clauses (all of them
+are true at the same time), the Oracle will return the list of our previously encoded variables,
+with positive value if true. Thus, by decoding the positive values, we successfully find the nodes
+which are part of the clique of size k. If the Oracle is unable to find a combination of true/false
+variables which satisfy all the clauses, it will return only the message False.
+
+### Time and Spatial Complexity
+* Spatial complexity: We used an adjacency matrix of dimension nxn for any given graph with n nodes
+and a result list which has k elements (the clique dimension), but since in the worst case the
+number of clique nodes is equal to the total number of nodes (k <= n), we consider that the list
+has a maximum dimension of n. Thus, the total space complexity is O(n^2).
+* Time complexity: The time complexity is determined by the iteration done through the three
+clauses (the other iterations have the maximum complexity of O(n)), which will be calculated as
+O(n * k + k * (k - 1) * n * (n - 1) / 2 + k * (k - 1) / 2 * n). Because, as previously stated, the 
+dimension of the clique could have a maximum value of n (k <= n), the time complexity will have
+the value of O(n^4) - mostly determined by the iterations within the second clause.
+---------------------------------------------------------------------------------------------------
+### Task 2 - Reclame
+
+#### Input and Output
+* The input data will be stored in certain variables, and the connection between the nodes will be
+stored using an adjacency matrix, but with a twist - the values are inverted: if the edge exists,
+the value stored in the matrix is false, and if the edge does not exist, the value is true.
+* The output data received from the Oracle will be stored in a String for keeping the True or False
+answer, and a list of values for keeping the clique nodes values.
+
+#### Identifying the NP graph problem
+* Because the task implies finding a "group of essential people" within a social network, without
+which every person remaining within the social network will be alone. This easily translates into
+the Vertex Cover graph problem, but because it implies four clauses and as a result, a higher time
+complexity, we will be reducing the Vertex Cover problem to K-Clique, which as previously stated,
+can be reduced to the SAT problem. 
+
+#### Reduction of Vertex Cover to K-Clique and repeated iterations
+* Since we want to find the minimum number of nodes to be removed in order for all the other
+nodes to be isolated, we can actually find the maximum clique within the complementary graph. If we
+eliminate the nodes within the found clique from the initial graph, we will realise that the
+remaining nodes are actually the ones that represent the initial graph's vertex cover.
+* As a result, we will iterate through the values of k, from its maximum possible value (n) and its
+lowest (2), create a new instance of the first task class (Retele) and at each iteration, change
+the value of k within that object. Thus, we will make multiple Oracle requests, until receiving
+a positive answer.
+
+#### The Oracle's result
+* In case the Oracle successfully found the variables which satisfies the clauses stated at the
+previous task for the complementary graph and for the current value of k, the vertex cover result
+can be found by creating a list of all the nodes and removing the ones within the Oracle's result
+list. The encoding/ decoding process is the same as for the first task.
+
+### Time and Spatial Complexity
+* Spatial complexity: We used an adjacency matrix of dimension nxn for the complementary graph with
+n nodes and a result list which has n elements. Thus, the total space complexity is O(n^2).
+* Time complexity: For the initialisation of the negated matrix of the complementary graph, the
+time complexity is O(n^2). Besides, since we make several calls (from k = n, 2) to the Oracle and
+call the formulateOracleQuestion() within the Retele class, which as stated before has a complexity
+of O(n^4), it results that the current task has a time complexity of O(n^5).
+---------------------------------------------------------------------------------------------------
+### Task 3 - Registre
+
+#### Input and Output
+* The input data will be stored in certain variables, and the connection between the nodes will be
+stored using an adjacency matrix.
+* The output data received from the Oracle will be stored in a String for keeping the True or False
+answer, and a hashmap of variables and registers, with variable as key and the allocated register
+as value.
+
+#### Identifying the NP graph problem
+* Because the task implies the allocation of variables to a given number of registers, the
+K-Coloring graph problem is easily identified. In that problem, each node is assigned a color,
+and no two connected nodes have the same color. Similarly, each variable has to be assigned to a
+registers, and no two connected variables can be assigned to the same register.
+
+#### Reduction of K-Coloring to SAT problem
+* Using a series of clauses, we can reduce the K-Coloring problem to the SAT problem, encoding the
+implied variables and writing the clauses based on the conditions the variables have to respect,
+clauses which will later be given to the Oracle for solving.
+* The solving steps are the following:
+  * Find the number of variables and their encoding:
+    * For this problem, we will consider that every variable within the graph could be assigned
+      to one of the registers. To further explain, consider that we have a variable x_iv for
+      each register i, 1 <= i <= k, and for each variable v from the graph, 1 <= v <= n, which
+      translates into "variable v is assigned to the ith register". Thus, we have a number
+      of n * k  variables, that we will encode according to the following formula: (v - 1) *
+      k + (i - 1) + 1. When decoding, the encoded variable will be firstly finding the variable
+      as the encoded value divided by the number of registers (+ 1, if the value is not divisible
+      by k), and the assigned register as the value modulo k.
+    * Clause types:
+      * We have a series of three types of clauses, which represent constrains that align with the
+        problem's bounds:
+        * Type 1: Each variable within the graph has to be assigned to at least one of the
+         available registers. Put simply, for every node v within the variables graph, one of
+         the register has to contain that variable, thus we have a number of n clauses of
+         x_1v v x_2v v ... v x_kv, 1 <= v <= n. As a result, at least one of the variables have
+         to be true in order for the assigment to take place.
+      * Type 2: If two vertices (variables) are connected, they cannot both be assigned to the
+        same register; they have to be assigned to different registers; Thus, for every register i
+        (1 <= i <= k), and for every two nodes v and w from the graph which are connected, the
+        clause will be the following: !x_iv v !x_iw. The number of clauses will be k * n.
+      * Type 3: Considering that we have a node (variable) v from the graph that is assigned to a
+        register, there cannot be any other register which contains that variable as well.
+        Thus, each variable is assigned to only one register only. Considering i, j, i!=j,
+        (1 <= i, j <= k) as two different registers, the clause for the node v will be the
+        following: !x_iv v !x_jv. We will have a number of n * k * (k - 1) / 2 clauses.
+
+#### The Oracle's result
+* Similarly to before, if the Oracle found the variables which satisfies all the clauses (all of
+them are true at the same time), it will return the list of our previously encoded variables, with
+positive value if true. Thus, by decoding the positive values, we successfully find the variables
+and the registers they were allocated to. If the Oracle is unable to find a combination of
+true/false variables which satisfy all the clauses, it will return only the message False.
+
+### Time and Spatial Complexity
+* Spatial complexity: We used an adjacency matrix of dimension nxn for any given graph with n nodes
+and a hashmap with n entries, is case of a positive answer from the Oracle. Thus, the total space
+complexity is O(n^2).
+* Time complexity: The time complexity is determined by the iteration done through the three
+clauses (the other iterations are negligible - with maximum O(n)), which will be calculated as
+O(n * k + n * (n - 1) / 2 * k + n * k * (k - 1) / 2). Because the number of registers could have a
+maximum value of n (k <= n), the time complexity will have the value of O(n^3).
+---------------------------------------------------------------------------------------------------
